@@ -1,334 +1,363 @@
 
-import React, { useState, useCallback } from 'react';
-import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UploadIcon, FileTextIcon, CheckCircleIcon, AlertCircleIcon, DownloadIcon, FileIcon } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { AnimatedLogo } from '@/components/AnimatedLogo';
-import { FileUploader } from '@/components/FileUploader';
-import { ReportCard } from '@/components/ReportCard';
-import { PageFadeIn } from '@/components/animations/PageFadeIn';
-import { motion } from '@/components/animations/Motion';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import FileUploader from "@/components/FileUploader";
+import { useAuth } from '@/context/AuthContext';
+import { saveReport, Report } from '@/services/mongoService';
+import { toast } from '@/hooks/use-toast';
+import {
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Download,
+  FileText,
+  LogOut,
+  Loader
+} from 'lucide-react';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 
-interface FileWithPreview extends File {
-  id: string;
-  preview: string;
+interface PageResult {
+  pageNumber: number;
+  status: 'pass' | 'fail' | 'warning';
+  issues?: string[];
 }
 
-interface EvaluationResult {
-  id: string;
+interface FileUploadResult {
   fileName: string;
-  pageCount: number;
-  status: 'success' | 'warning' | 'error';
-  score: number;
-  details: {
-    pageNumber: number;
-    score: number;
-    issues: Array<{
-      type: string;
-      description: string;
-      severity: 'low' | 'medium' | 'high';
-    }>;
-  }[];
-  date: Date;
+  status: 'processing' | 'completed' | 'failed';
+  progress: number;
+  results?: PageResult[];
+  error?: string;
 }
 
-const DesignQualityAssurance = () => {
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
-  const [isEvaluating, setIsEvaluating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [evaluationResults, setEvaluationResults] = useState<EvaluationResult[]>([]);
-  const [activeTab, setActiveTab] = useState('upload');
-  const { toast } = useToast();
+const DesignQualityAssurance: React.FC = () => {
+  const { user, logout } = useAuth();
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadResults, setUploadResults] = useState<FileUploadResult[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleFileDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map(file => ({
-      ...file,
-      id: `${file.name}-${Date.now()}`,
-      preview: URL.createObjectURL(file)
-    })) as FileWithPreview[];
+  const handleFilesAdded = (newFiles: File[]) => {
+    if (isProcessing) return;
     
-    setFiles(prev => [...prev, ...newFiles]);
-    toast({
-      title: "Files added",
-      description: `Added ${acceptedFiles.length} file(s) for evaluation`,
-      duration: 3000,
+    setFiles((prevFiles) => {
+      // Filter out duplicates (files with the same name)
+      const existingFileNames = prevFiles.map(f => f.name);
+      const uniqueNewFiles = newFiles.filter(f => !existingFileNames.includes(f.name));
+      
+      return [...prevFiles, ...uniqueNewFiles];
     });
-  }, [toast]);
-
-  const handleRemoveFile = (id: string) => {
-    setFiles(files.filter(file => file.id !== id));
+    
+    // Initialize upload results
+    setUploadResults((prev) => {
+      const newResults = newFiles.map(file => ({
+        fileName: file.name,
+        status: 'processing' as const,
+        progress: 0
+      }));
+      
+      return [...prev, ...newResults];
+    });
   };
 
-  const startEvaluation = () => {
+  const processFiles = async () => {
     if (files.length === 0) {
       toast({
-        title: "No files",
-        description: "Please upload at least one PDF file for evaluation",
-        variant: "destructive",
+        title: "No files to process",
+        description: "Please upload PDF files first.",
+        variant: "destructive"
       });
       return;
     }
-
-    setIsEvaluating(true);
-    setProgress(0);
-    setActiveTab('evaluating');
-
-    // Simulate progress
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
+    
+    setIsProcessing(true);
+    
+    // Process each file
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Update progress
+      setUploadResults(prev => {
+        const updated = [...prev];
+        const index = updated.findIndex(result => result.fileName === file.name);
+        if (index !== -1) {
+          updated[index] = { ...updated[index], progress: 10 };
         }
-        return prev + 5;
+        return updated;
       });
-    }, 300);
-
-    // Simulate evaluation process
-    setTimeout(() => {
-      clearInterval(interval);
-      setProgress(100);
+      
+      // Simulate file processing (in a real app, this would call an API)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update progress to 50%
+      setUploadResults(prev => {
+        const updated = [...prev];
+        const index = updated.findIndex(result => result.fileName === file.name);
+        if (index !== -1) {
+          updated[index] = { ...updated[index], progress: 50 };
+        }
+        return updated;
+      });
+      
+      // Simulate more processing time
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Generate mock results
-      const results: EvaluationResult[] = files.map(file => {
-        const pageCount = Math.floor(Math.random() * 10) + 1;
-        const score = Math.floor(Math.random() * 30) + 70;
-        const status = score > 85 ? 'success' : score > 70 ? 'warning' : 'error';
+      const pageCount = Math.floor(Math.random() * 10) + 3; // 3-12 pages
+      const mockResults: PageResult[] = Array.from({ length: pageCount }).map((_, index) => {
+        const statuses: ('pass' | 'fail' | 'warning')[] = ['pass', 'fail', 'warning'];
+        const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
         
-        const details = Array(pageCount).fill(0).map((_, i) => {
-          const pageScore = Math.floor(Math.random() * 30) + 70;
-          const issueCount = Math.floor(Math.random() * 3) + 1;
-          
-          return {
-            pageNumber: i + 1,
-            score: pageScore,
-            issues: Array(issueCount).fill(0).map(() => {
-              const issueTypes = [
-                'Design inconsistency', 
-                'Low contrast ratio', 
-                'Improper spacing', 
-                'Text overflow',
-                'Missing alt text',
-                'Accessibility issue'
-              ];
-              const severities = ['low', 'medium', 'high'] as const;
-              
-              return {
-                type: issueTypes[Math.floor(Math.random() * issueTypes.length)],
-                description: `Issue found on page ${i + 1}`,
-                severity: severities[Math.floor(Math.random() * severities.length)]
-              };
-            })
-          };
-        });
+        const issues = randomStatus === 'pass' 
+          ? [] 
+          : [
+              'Inconsistent dimensions',
+              'Missing electrical labels',
+              'Inadequate clearance',
+              'Improper conduit routing',
+              'Incorrect setback distances'
+            ].slice(0, Math.floor(Math.random() * 3) + 1);
         
         return {
-          id: file.id,
-          fileName: file.name,
-          pageCount,
-          status,
-          score,
-          details,
-          date: new Date()
+          pageNumber: index + 1,
+          status: randomStatus,
+          issues: issues.length > 0 ? issues : undefined
         };
       });
       
-      setEvaluationResults(results);
-      setIsEvaluating(false);
-      setActiveTab('results');
-      
-      toast({
-        title: "Evaluation complete",
-        description: `Successfully evaluated ${files.length} file(s)`,
+      // Update to completed with results
+      setUploadResults(prev => {
+        const updated = [...prev];
+        const index = updated.findIndex(result => result.fileName === file.name);
+        if (index !== -1) {
+          updated[index] = {
+            ...updated[index],
+            status: 'completed',
+            progress: 100,
+            results: mockResults
+          };
+        }
+        return updated;
       });
-    }, 6000);
+      
+      // Save report to MongoDB (mock)
+      if (user) {
+        const overallStatus = mockResults.every(r => r.status === 'pass') 
+          ? 'success' 
+          : mockResults.some(r => r.status === 'fail') 
+            ? 'failed' 
+            : 'partial';
+            
+        await saveReport({
+          userId: user.id,
+          fileName: file.name,
+          status: overallStatus,
+          pageResults: mockResults,
+          downloadUrl: '#' // This would be a real URL in a production app
+        });
+      }
+    }
+    
+    toast({
+      title: "Processing complete",
+      description: `Successfully processed ${files.length} files.`,
+    });
+    
+    setIsProcessing(false);
   };
 
-  const downloadReport = (result: EvaluationResult) => {
-    // In a real app, this would generate and download a PDF report
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pass':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'fail':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      case 'warning':
+        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const handleReset = () => {
+    setFiles([]);
+    setUploadResults([]);
+  };
+
+  const downloadReport = (fileName: string) => {
     toast({
       title: "Report downloaded",
-      description: `Report for ${result.fileName} has been saved`,
-    });
-  };
-
-  const saveToDatabase = () => {
-    // In a real app, this would save to MongoDB
-    toast({
-      title: "Reports saved",
-      description: "All reports have been stored in the database",
+      description: `Report for ${fileName} has been downloaded.`,
     });
   };
 
   return (
-    <PageFadeIn>
-      <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <AnimatedLogo className="h-10 w-10" />
-            <motion.h1 
-              className="text-3xl font-bold text-gray-900"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              Design Quality Assurance
-            </motion.h1>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
-              <TabsTrigger 
-                value="upload" 
-                disabled={isEvaluating}
-                className="data-[state=active]:bg-watt-gold data-[state=active]:text-black"
-              >
-                <UploadIcon className="mr-2 h-4 w-4" />
-                Upload Files
-              </TabsTrigger>
-              <TabsTrigger 
-                value="evaluating" 
-                disabled={!isEvaluating}
-                className="data-[state=active]:bg-watt-bronze data-[state=active]:text-black"
-              >
-                <FileTextIcon className="mr-2 h-4 w-4" />
-                Evaluating
-              </TabsTrigger>
-              <TabsTrigger 
-                value="results" 
-                disabled={evaluationResults.length === 0}
-                className="data-[state=active]:bg-watt-orange data-[state=active]:text-black"
-              >
-                <CheckCircleIcon className="mr-2 h-4 w-4" />
-                Results
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="upload" className="space-y-6">
-              <Card className="p-6 shadow-soft">
-                <h2 className="text-xl font-semibold mb-4">Upload PDF Files for Evaluation</h2>
-                <p className="text-gray-600 mb-6">
-                  Upload one or multiple PDF files to evaluate design quality. 
-                  We'll analyze each page and provide detailed feedback.
-                </p>
-                
-                <FileUploader 
-                  onFilesAdded={handleFileDrop}
-                  accept={{
-                    'application/pdf': ['.pdf']
-                  }}
-                  maxFiles={10}
-                  maxSize={10 * 1024 * 1024} // 10MB
-                />
-
-                {files.length > 0 && (
-                  <div className="mt-8 space-y-4">
-                    <h3 className="font-medium text-gray-700">Uploaded Files ({files.length})</h3>
-                    <div className="space-y-3">
-                      {files.map(file => (
-                        <div 
-                          key={file.id} 
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100"
-                        >
-                          <div className="flex items-center">
-                            <FileIcon className="h-5 w-5 text-gray-500 mr-2" />
-                            <span className="text-sm font-medium">{file.name}</span>
-                            <span className="ml-2 text-xs text-gray-500">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleRemoveFile(file.id)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="pt-4">
-                      <Button 
-                        onClick={startEvaluation} 
-                        className="bg-watt-gold hover:bg-watt-bronze text-black"
-                        disabled={isEvaluating}
-                      >
-                        Start Evaluation
-                      </Button>
-                    </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <Link to="/" className="flex items-center gap-2">
+            <img 
+              src="/lovable-uploads/57f90501-54a2-4a12-8bcb-788643b36715.png" 
+              alt="Wattmonk Logo" 
+              className="h-8" 
+            />
+          </Link>
+          
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>{user?.email || 'Account'}</NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-[200px] p-2">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start" 
+                      onClick={logout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </Button>
                   </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+      </header>
+      
+      <main className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Design Quality Assurance</h1>
+        
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="p-6">
+            <h2 className="text-lg font-medium mb-4">Upload Files</h2>
+            
+            <FileUploader 
+              onFilesAdded={handleFilesAdded}
+              maxSize={50 * 1024 * 1024} // 50MB
+            />
+            
+            <div className="mt-6 flex flex-wrap gap-4">
+              <Button 
+                onClick={processFiles}
+                disabled={files.length === 0 || isProcessing}
+                className="bg-amber-500 hover:bg-amber-600"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Analyze Documents'
                 )}
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="evaluating" className="space-y-6">
-              <Card className="p-8 shadow-soft">
-                <div className="text-center">
-                  <div className="mb-8">
-                    <div className="inline-block p-4 rounded-full bg-watt-gold/10 mb-4">
-                      <FileTextIcon className="h-12 w-12 text-watt-bronze animate-pulse" />
-                    </div>
-                    <h2 className="text-xl font-semibold mb-2">Evaluating Your Design Files</h2>
-                    <p className="text-gray-600">
-                      Please wait while we analyze the quality of your design files.
-                      This may take a few moments.
-                    </p>
-                  </div>
-                  
-                  <div className="max-w-md mx-auto mb-8">
-                    <Progress value={progress} className="h-2" />
-                    <p className="mt-2 text-sm text-gray-500">{progress}% complete</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {files.map((file, index) => (
-                      <div 
-                        key={file.id} 
-                        className="flex items-center p-2 bg-gray-50 rounded-lg"
-                      >
-                        <FileIcon className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm">{file.name}</span>
-                        {progress > index * (100 / files.length) && (
-                          <CheckCircleIcon className="ml-auto h-4 w-4 text-green-500" />
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleReset}
+                disabled={files.length === 0 || isProcessing}
+              >
+                Reset
+              </Button>
+            </div>
+          </div>
+          
+          {/* File List */}
+          {uploadResults.length > 0 && (
+            <div className="border-t">
+              <div className="p-6">
+                <h2 className="text-lg font-medium mb-4">Uploaded Files</h2>
+                
+                <div className="space-y-6">
+                  {uploadResults.map((result, index) => (
+                    <div key={index} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 text-gray-400 mr-2" />
+                          <span className="font-medium">{result.fileName}</span>
+                        </div>
+                        
+                        {result.status === 'completed' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => downloadReport(result.fileName)}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Report
+                          </Button>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="results" className="space-y-6">
-              <Card className="p-6 shadow-soft">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold">Evaluation Results</h2>
-                  <Button 
-                    onClick={saveToDatabase}
-                    className="bg-watt-gold hover:bg-watt-bronze text-black"
-                  >
-                    Save All Reports
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {evaluationResults.map((result) => (
-                    <ReportCard 
-                      key={result.id} 
-                      result={result}
-                      onDownload={() => downloadReport(result)}
-                    />
+                      
+                      {/* Progress bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                        <div 
+                          className="bg-amber-500 h-2.5 rounded-full transition-all duration-500"
+                          style={{ width: `${result.progress}%` }}
+                        ></div>
+                      </div>
+                      
+                      {/* Status */}
+                      <div className="text-sm text-gray-500">
+                        {result.status === 'processing' ? (
+                          <span>Processing... {result.progress}%</span>
+                        ) : result.status === 'completed' ? (
+                          <span className="text-green-500">Completed</span>
+                        ) : (
+                          <span className="text-red-500">Failed: {result.error}</span>
+                        )}
+                      </div>
+                      
+                      {/* Results */}
+                      {result.results && result.results.length > 0 && (
+                        <div className="mt-4">
+                          <h3 className="font-medium mb-2">Page Analysis</h3>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {result.results.map((pageResult, pageIndex) => (
+                              <div 
+                                key={pageIndex} 
+                                className="border rounded-lg p-3 bg-white hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium">Page {pageResult.pageNumber}</span>
+                                  {getStatusIcon(pageResult.status)}
+                                </div>
+                                
+                                {pageResult.issues && pageResult.issues.length > 0 && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    <p className="font-medium">Issues:</p>
+                                    <ul className="list-disc list-inside">
+                                      {pageResult.issues.map((issue, i) => (
+                                        <li key={i}>{issue}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-    </PageFadeIn>
+      </main>
+    </div>
   );
 };
 
