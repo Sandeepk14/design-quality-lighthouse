@@ -39,8 +39,53 @@ export const getReportsByUser = async (userId: string): Promise<Report[]> => {
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 };
 
+export const getReportsByDate = async (userId: string, date: Date): Promise<Report[]> => {
+  // In a real app, this would be an API call to fetch from MongoDB with date filtering
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+  
+  const nextDay = new Date(targetDate);
+  nextDay.setDate(nextDay.getDate() + 1);
+  
+  return reports.filter(report => {
+    return report.userId === userId && 
+           report.createdAt >= targetDate && 
+           report.createdAt < nextDay;
+  }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+};
+
 export const getReportById = async (reportId: string): Promise<Report | null> => {
   // In a real app, this would be an API call to fetch from MongoDB
   const report = reports.find(r => r.id === reportId);
   return report || null;
+};
+
+export const deleteReport = async (reportId: string): Promise<boolean> => {
+  // In a real app, this would be an API call to delete from MongoDB
+  const initialLength = reports.length;
+  reports = reports.filter(r => r.id !== reportId);
+  return reports.length < initialLength;
+};
+
+export const generateMockReport = (fileName: string, pageCount: number): Report['pageResults'] => {
+  return Array.from({ length: pageCount }).map((_, index) => {
+    const statuses: ('pass' | 'fail' | 'warning')[] = ['pass', 'fail', 'warning'];
+    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+    
+    const issues = randomStatus === 'pass' 
+      ? [] 
+      : [
+          'Inconsistent dimensions',
+          'Missing electrical labels',
+          'Inadequate clearance',
+          'Improper conduit routing',
+          'Incorrect setback distances'
+        ].slice(0, Math.floor(Math.random() * 3) + 1);
+    
+    return {
+      pageNumber: index + 1,
+      status: randomStatus,
+      issues: issues.length > 0 ? issues : undefined
+    };
+  });
 };

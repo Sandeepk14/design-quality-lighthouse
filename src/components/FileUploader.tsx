@@ -10,7 +10,7 @@ interface FileUploaderProps {
   onFilesAdded: (files: File[]) => void;
   accept?: Record<string, string[]>;
   maxFiles?: number;
-  maxSize?: number; // Now supporting up to 50MB
+  maxSize?: number; // Supporting up to 50MB
   className?: string;
 }
 
