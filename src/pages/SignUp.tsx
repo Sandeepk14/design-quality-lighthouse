@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from '@/context/AuthContext';
 import { motion } from '@/components/animations/Motion';
 import { Eye, EyeOff, User, Lock, Mail } from 'lucide-react';
+import { toast } from "@/hooks/use-toast";
 
 const SignUp = () => {
   const [name, setName] = useState('');
@@ -14,19 +14,57 @@ const SignUp = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!agreeTerms) {
-      alert('Please agree to the terms and conditions');
+      toast({
+        title: "Terms and Conditions",
+        description: "Please agree to the terms and conditions to continue",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
       return;
     }
     
-    const success = await signup(email, password, name);
-    if (success) {
-      navigate('/design-quality-assurance');
+    setIsLoading(true);
+    
+    try {
+      const success = await signup(email, password, name);
+      if (success) {
+        toast({
+          title: "Account created",
+          description: "You have successfully signed up!"
+        });
+        navigate('/design-quality-assurance');
+      } else {
+        toast({
+          title: "Signup failed",
+          description: "An error occurred during signup. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      toast({
+        title: "Signup failed",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -103,7 +141,15 @@ const SignUp = () => {
             <h2 className="text-2xl font-bold">Create an account</h2>
           </div>
           
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 px-4 text-gray-700 mb-6 hover:bg-gray-50 transition-colors">
+          <button 
+            className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 px-4 text-gray-700 mb-6 hover:bg-gray-50 transition-colors"
+            onClick={() => {
+              toast({
+                title: "Google Sign Up",
+                description: "Google sign up is not available in this demo",
+              });
+            }}
+          >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
               <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
               <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
@@ -190,7 +236,7 @@ const SignUp = () => {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-gray-500">Password must be at least 8 characters</p>
+              <p className="text-xs text-gray-500">Password must be at least 6 characters</p>
             </div>
             
             <div className="flex items-start">
@@ -213,8 +259,12 @@ const SignUp = () => {
               </label>
             </div>
             
-            <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600">
-              Create account
+            <Button 
+              type="submit" 
+              className="w-full bg-amber-500 hover:bg-amber-600"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>
           
