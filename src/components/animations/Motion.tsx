@@ -2,7 +2,7 @@
 import React from 'react';
 
 interface MotionProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   initial?: any;
   animate?: any;
   exit?: any;
