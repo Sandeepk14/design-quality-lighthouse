@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +13,7 @@ import SignUp from "./pages/SignUp";
 
 const queryClient = new QueryClient();
 
-// Protected route component (now keeping for future use, but not using it for DesignQualityAssurance)
+// Protected route component that redirects to SignIn if not authenticated
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   
@@ -33,7 +34,14 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/sign-in" element={<SignIn />} />
       <Route path="/sign-up" element={<SignUp />} />
-      <Route path="/design-quality-assurance" element={<DesignQualityAssurance />} />
+      <Route 
+        path="/design-quality-assurance" 
+        element={
+          <ProtectedRoute>
+            <DesignQualityAssurance />
+          </ProtectedRoute>
+        } 
+      />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>

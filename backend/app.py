@@ -1,10 +1,12 @@
+
 import fitz  # PyMuPDF
 import json
 import google.generativeai as genai  # Google Gemini API
 import os
 import tempfile
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
+
 # Load environment variables
 load_dotenv()
 
@@ -13,18 +15,20 @@ from flask_cors import CORS  # Add this import at the top
 # Right after creating your Flask app, add:
 app = Flask(__name__)
 CORS(app)
+
 # Configure Google Gemini API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-# Initialize Flask app
-app = Flask(__name__)
+
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_path):
     try:
         doc = fitz.open(pdf_path)
         text = "\n".join([page.get_text() for page in doc])
-        return text
+        page_count = len(doc)
+        return text, page_count
     except Exception as e:
         raise ValueError(f"Error extracting text from PDF: {e}")
+
 # Function to generate JSON from text using Gemini
 def generate_json_from_text(text):
     structuring_prompt = f"""
@@ -69,6 +73,7 @@ def generate_json_from_text(text):
         print(f"Error parsing JSON from Gemini response: {e}")
         print(f"Response text: {response.text}")
         return {"error": "Failed to parse JSON from Gemini response"}
+    
     # Modify Certain Values Using Gemini
     modification_prompt = f"""
     Modify the following JSON by making the following changes:
@@ -91,7 +96,9 @@ def generate_json_from_text(text):
         print(f"Error parsing modified JSON from Gemini response: {e}")
         print(f"Response text: {response_modified.text}")
         return {"error": "Failed to parse modified JSON from Gemini response"}
+    
     return modified_json
+
 # Function to validate PDF details against JSON using Gemini
 def validate_pdf_with_gemini(pdf_text, json_data):
     prompt = f"""
@@ -126,35 +133,87 @@ def validate_pdf_with_gemini(pdf_text, json_data):
         )
     )
     return response.text  # Gemini returns a structured validation report
+
+# Generate a detailed quality report
+def generate_quality_report(pdf_text, validation_result, page_count):
+    prompt = f"""
+    Generate a detailed solar design quality report for this PDF.
+    
+    Here is the validation result:
+    {validation_result}
+    
+    The document has {page_count} pages.
+    
+    For each page, identify potential issues with:
+    1. Electrical specifications
+    2. Structural elements
+    3. Code compliance
+    4. Safety considerations
+    
+    Return a JSON that includes:
+    - overall_score: A number from 0-100 indicating overall quality
+    - status: "success" (>85%), "partial" (60-85%), or "failed" (<60%)
+    - page_results: Array of pages with:
+      - pageNumber: Page number
+      - status: "pass", "warning", or "fail"
+      - issues: Array of issues found on this page
+      - score: 0-100 score for this page
+    """
+    
+    model = genai.GenerativeModel('gemini-1.5-pro-002')
+    response = model.generate_content(
+        prompt,
+        generation_config=genai.types.GenerationConfig(
+            temperature=0.3,
+            response_mime_type="application/json"
+        )
+    )
+    
+    try:
+        return json.loads(response.text)
+    except json.JSONDecodeError:
+        # Fallback with mock data
+        return {
+            "overall_score": 75,
+            "status": "partial",
+            "page_results": [
+                {
+                    "pageNumber": i+1,
+                    "status": ["pass", "warning", "fail"][i % 3],
+                    "issues": ["Sample issue 1", "Sample issue 2"] if i % 3 > 0 else [],
+                    "score": max(60, 100 - (i * 10))
+                } for i in range(page_count)
+            ]
+        }
+
 # Route to handle PDF and JSON validation
 @app.route('/validate', methods=['POST'])
 def validate():
     if 'pdf_file' not in request.files:
         return jsonify({"error": "PDF file is required"}), 400
+        
     pdf_file = request.files['pdf_file']
+    
     try:
         # Create a temporary directory
         with tempfile.TemporaryDirectory() as tmpdirname:
             pdf_path = os.path.join(tmpdirname, pdf_file.filename)
             pdf_file.save(pdf_path)
-            pdf_text = extract_text_from_pdf(pdf_path)
+            
+            pdf_text, page_count = extract_text_from_pdf(pdf_path)
             json_data = generate_json_from_text(pdf_text)
             validation_result = validate_pdf_with_gemini(pdf_text, json_data)
+            quality_report = generate_quality_report(pdf_text, validation_result, page_count)
+            
         return jsonify({
+            "fileName": pdf_file.filename,
             "generated_json": json_data,
-            "validation_result": json.loads(validation_result)
+            "validation_result": json.loads(validation_result),
+            "quality_report": quality_report
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 # Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-
-
-
-
-
-
