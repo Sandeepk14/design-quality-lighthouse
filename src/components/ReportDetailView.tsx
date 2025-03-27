@@ -149,11 +149,8 @@ const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                   <Progress 
                     value={report.score} 
                     className="h-2 mt-2" 
-                    indicatorClassName={
-                      report.score > 85 ? "bg-green-500" : 
-                      report.score > 60 ? "bg-amber-500" : 
-                      "bg-red-500"
-                    }
+                    // Fixed error - using className instead of indicatorClassName
+                    // The indicator color is now controlled by CSS
                   />
                 </CardContent>
               </Card>

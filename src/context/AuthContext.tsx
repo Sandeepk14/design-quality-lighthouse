@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
+import { findUserByEmail, validateUserCredentials, createUser as createUserInDB } from '@/services/mongoService';
 
 interface User {
   id: string;
@@ -43,15 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Mock login - in a real app, this would be an API call
-      if (email && password) {
-        // This is just for demonstration - replace with actual authentication
-        const mockUser = { id: '123', email };
-        const mockToken = 'mock-jwt-token';
+      setIsLoading(true);
+      // Use the MongoDB service to validate credentials
+      const validUser = await validateUserCredentials(email, password);
+      
+      if (validUser) {
+        const userData = {
+          id: validUser.id,
+          email: validUser.email,
+          name: validUser.name
+        };
         
-        setUser(mockUser);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        localStorage.setItem('token', mockToken);
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', 'mock-jwt-token');
         
         toast({
           title: "Login successful",
@@ -60,6 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         return true;
       }
+      
+      toast({
+        title: "Login failed",
+        description: "Invalid email or password.",
+        variant: "destructive"
+      });
+      
       return false;
     } catch (error) {
       console.error("Login error:", error);
@@ -69,29 +82,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signup = async (email: string, password: string, name?: string): Promise<boolean> => {
     try {
-      // Mock signup - in a real app, this would be an API call
-      if (email && password) {
-        // This is just for demonstration - replace with actual user creation
-        const mockUser = { id: '123', email, name };
-        const mockToken = 'mock-jwt-token';
-        
-        setUser(mockUser);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        localStorage.setItem('token', mockToken);
-        
+      setIsLoading(true);
+      // Check if user already exists
+      const existingUser = await findUserByEmail(email);
+      
+      if (existingUser) {
         toast({
-          title: "Account created",
-          description: "Your account has been successfully created.",
+          title: "Signup failed",
+          description: "An account with this email already exists.",
+          variant: "destructive"
         });
-        
-        return true;
+        return false;
       }
-      return false;
+      
+      // Create new user in DB
+      const newUser = await createUserInDB(email, password, name);
+      
+      // Sign in the newly created user
+      const userData = {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name
+      };
+      
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', 'mock-jwt-token');
+      
+      toast({
+        title: "Account created",
+        description: "Your account has been successfully created.",
+      });
+      
+      return true;
     } catch (error) {
       console.error("Signup error:", error);
       toast({
@@ -100,6 +130,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 

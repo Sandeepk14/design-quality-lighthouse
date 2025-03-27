@@ -19,32 +19,21 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Report } from '@/services/mongoService';
 
 interface PDFReportProps {
-  id: string;
-  fileName: string;
-  status: 'success' | 'failed' | 'partial';
-  score: number;
-  createdAt: Date;
-  pageCount: number;
-  issueCount: number;
+  report: Report;
   onViewDetails: (reportId: string) => void;
   onDownload: (reportId: string) => void;
 }
 
 const PDFReport: React.FC<PDFReportProps> = ({
-  id,
-  fileName,
-  status,
-  score,
-  createdAt,
-  pageCount,
-  issueCount,
+  report,
   onViewDetails,
   onDownload
 }) => {
   const getStatusIcon = () => {
-    switch (status) {
+    switch (report.status) {
       case 'success':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'failed':
@@ -57,7 +46,7 @@ const PDFReport: React.FC<PDFReportProps> = ({
   };
 
   const getStatusText = () => {
-    switch (status) {
+    switch (report.status) {
       case 'success':
         return 'Pass';
       case 'failed':
@@ -70,7 +59,7 @@ const PDFReport: React.FC<PDFReportProps> = ({
   };
 
   const getStatusColor = () => {
-    switch (status) {
+    switch (report.status) {
       case 'success':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'failed':
@@ -92,17 +81,23 @@ const PDFReport: React.FC<PDFReportProps> = ({
     }).format(date);
   };
 
+  // Calculate total issues
+  const issueCount = report.pageResults.reduce(
+    (count, page) => count + (page.issues?.length || 0), 
+    0
+  );
+
   return (
     <Card className="border shadow-sm hover:shadow-md transition-shadow duration-200">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex justify-between items-center">
-          <div className="flex items-center gap-2 truncate max-w-[70%]" title={fileName}>
+          <div className="flex items-center gap-2 truncate max-w-[70%]" title={report.fileName}>
             <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
-            <span className="truncate">{fileName}</span>
+            <span className="truncate">{report.fileName}</span>
           </div>
           <Badge className={getStatusColor()}>
             {getStatusIcon()}
-            <span className="ml-1">{score}%</span>
+            <span className="ml-1">{report.score}%</span>
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -115,11 +110,11 @@ const PDFReport: React.FC<PDFReportProps> = ({
           </div>
           <div>
             <p className="text-gray-500">Date</p>
-            <p className="font-medium">{formatDate(createdAt)}</p>
+            <p className="font-medium">{formatDate(report.createdAt)}</p>
           </div>
           <div>
             <p className="text-gray-500">Pages</p>
-            <p className="font-medium">{pageCount}</p>
+            <p className="font-medium">{report.pageResults.length}</p>
           </div>
           <div>
             <p className="text-gray-500">Issues</p>
@@ -132,7 +127,7 @@ const PDFReport: React.FC<PDFReportProps> = ({
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => onViewDetails(id)}
+          onClick={() => onViewDetails(report.id)}
           className="flex gap-1 items-center"
         >
           <BarChart className="h-4 w-4" />
@@ -141,7 +136,7 @@ const PDFReport: React.FC<PDFReportProps> = ({
         <Button 
           variant="ghost" 
           size="sm"
-          onClick={() => onDownload(id)}
+          onClick={() => onDownload(report.id)}
           className="flex gap-1 items-center"
         >
           <Download className="h-4 w-4" />

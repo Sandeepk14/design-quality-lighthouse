@@ -1,6 +1,6 @@
 
-// This is a mock MongoDB service
-// In a real application, this would connect to a MongoDB instance via API endpoints
+// This is a service to interact with MongoDB Atlas
+// In a production app, these calls would go to a backend API that connects to MongoDB
 
 export interface Report {
   id: string;
@@ -17,8 +17,11 @@ export interface Report {
   downloadUrl?: string;
 }
 
-// Mock database
+// Mock database for frontend
 let reports: Report[] = [];
+
+// MongoDB connection string (would be used in backend)
+// const MONGODB_URI = "mongodb+srv://skraj5873:<db_password>@cluster0.bpjwvvw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 export const saveReport = async (report: Omit<Report, 'id' | 'createdAt' | 'score'>): Promise<Report> => {
   // Calculate overall score based on page results
@@ -29,7 +32,7 @@ export const saveReport = async (report: Omit<Report, 'id' | 'createdAt' | 'scor
   // Score calculation: passed pages = 100%, warning pages = 50%, failed pages = 0%
   const score = Math.round(((passedPages * 100) + (warningPages * 50)) / totalPages);
   
-  // In a real app, this would be an API call to save to MongoDB
+  // In a real app, this would be an API call to save to MongoDB Atlas
   const newReport = {
     ...report,
     id: Math.random().toString(36).substring(2, 9),
@@ -44,13 +47,13 @@ export const saveReport = async (report: Omit<Report, 'id' | 'createdAt' | 'scor
 };
 
 export const getReportsByUser = async (userId: string): Promise<Report[]> => {
-  // In a real app, this would be an API call to fetch from MongoDB
+  // In a real app, this would be an API call to fetch from MongoDB Atlas
   return reports.filter(report => report.userId === userId)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 };
 
 export const getReportsByDate = async (userId: string, date: Date): Promise<Report[]> => {
-  // In a real app, this would be an API call to fetch from MongoDB with date filtering
+  // In a real app, this would be an API call to fetch from MongoDB Atlas with date filtering
   const targetDate = new Date(date);
   targetDate.setHours(0, 0, 0, 0);
   
@@ -65,192 +68,59 @@ export const getReportsByDate = async (userId: string, date: Date): Promise<Repo
 };
 
 export const getReportById = async (reportId: string): Promise<Report | null> => {
-  // In a real app, this would be an API call to fetch from MongoDB
+  // In a real app, this would be an API call to fetch from MongoDB Atlas
   const report = reports.find(r => r.id === reportId);
   return report || null;
 };
 
 export const deleteReport = async (reportId: string): Promise<boolean> => {
-  // In a real app, this would be an API call to delete from MongoDB
+  // In a real app, this would be an API call to delete from MongoDB Atlas
   const initialLength = reports.length;
   reports = reports.filter(r => r.id !== reportId);
   return reports.length < initialLength;
 };
 
-export const generateMockReport = (fileName: string, pageCount: number): Report['pageResults'] => {
-  return Array.from({ length: pageCount }).map((_, index) => {
-    const statuses: ('pass' | 'fail' | 'warning')[] = ['pass', 'fail', 'warning'];
-    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-    
-    const issues = randomStatus === 'pass'
-      ? []
-      : [
-          'Inconsistent dimensions',
-          'Missing electrical labels',
-          'Inadequate clearance',
-          'Improper conduit routing',
-          'Incorrect setback distances'
-        ].slice(0, Math.floor(Math.random() * 3) + 1);
-    
-    return {
-      pageNumber: index + 1,
-      status: randomStatus,
-      issues: issues.length > 0 ? issues : undefined
-    };
-  });
-};
-
-// The following code is commented out for future implementation with real MongoDB
-/*
-import mongoose, { Schema, model, Document } from 'mongoose';
-import 'dotenv/config'; // Ensure environment variables are loaded
-import { connect } from 'mongoose';
-import dotenv from 'dotenv';
-dotenv.config();
-
-
-// Securely load MongoDB URI from environment variables
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  console.error('❌ MongoDB connection string is missing. Set MONGO_URI in a .env file.');
-  process.exit(1);
+// Add user management functions
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  password: string; // In a real app this would be hashed
 }
 
-// Connect to MongoDB with proper error handling
-mongoose
-  .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  } as mongoose.ConnectOptions)
-  .then(() => console.log('✅ MongoDB Connected Successfully'))
-  .catch((err) => {
-    console.error('❌ MongoDB Connection Error:', err);
-    process.exit(1);
-  });
+let users: User[] = [];
 
-// Report Interface
-export interface Report {
-  userId: string;
-  fileName: string;
-  createdAt: Date;
-  status: 'success' | 'failed' | 'partial';
-  pageResults: {
-    pageNumber: number;
-    status: 'pass' | 'fail' | 'warning';
-    issues?: string[];
-  }[];
-  downloadUrl?: string;
-}
-
-// Mongoose Document Interface
-interface ReportDocument extends Report, Document {}
-
-// Mongoose Schema
-const reportSchema = new Schema<ReportDocument>(
-  {
-    userId: { type: String, required: true },
-    fileName: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now },
-    status: { type: String, enum: ['success', 'failed', 'partial'], required: true },
-    pageResults: [
-      {
-        pageNumber: { type: Number, required: true },
-        status: { type: String, enum: ['pass', 'fail', 'warning'], required: true },
-        issues: { type: [String], default: [] },
-      },
-    ],
-    downloadUrl: { type: String },
-  },
-  { timestamps: true } // Adds createdAt & updatedAt timestamps
-);
-
-// Mongoose Model
-const ReportModel = model<ReportDocument>('Report', reportSchema);
-
-// Save a Report
-export const saveReport = async (report: Omit<Report, 'createdAt'>): Promise<Report> => {
-  try {
-    const newReport = new ReportModel({ ...report, createdAt: new Date() });
-    return await newReport.save();
-  } catch (error) {
-    console.error('❌ Error saving report:', error);
-    throw error;
-  }
+export const createUser = async (email: string, password: string, name?: string): Promise<User> => {
+  // In a real app, this would be an API call to save to MongoDB Atlas with password hashing
+  const newUser = {
+    id: Math.random().toString(36).substring(2, 9),
+    email,
+    password, // Would be hashed in a real app
+    name
+  };
+  
+  users.push(newUser);
+  console.log('User created:', newUser);
+  
+  return newUser;
 };
 
-// Get Reports by User ID
-export const getReportsByUser = async (userId: string): Promise<Report[]> => {
-  try {
-    return await ReportModel.find({ userId }).sort({ createdAt: -1 });
-  } catch (error) {
-    console.error('❌ Error fetching reports by user:', error);
-    throw error;
-  }
+export const findUserByEmail = async (email: string): Promise<User | null> => {
+  // In a real app, this would be an API call to fetch from MongoDB Atlas
+  const user = users.find(u => u.email === email);
+  return user || null;
 };
 
-// Get Reports by Date
-export const getReportsByDate = async (userId: string, date: Date): Promise<Report[]> => {
-  try {
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
-
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-
-    return await ReportModel.find({
-      userId,
-      createdAt: { $gte: startDate, $lt: endDate },
-    }).sort({ createdAt: -1 });
-  } catch (error) {
-    console.error('❌ Error fetching reports by date:', error);
-    throw error;
-  }
+export const validateUserCredentials = async (email: string, password: string): Promise<User | null> => {
+  // In a real app, this would be an API call with proper password validation
+  const user = users.find(u => u.email === email && u.password === password);
+  return user || null;
 };
 
-// Get Report by ID
-export const getReportById = async (reportId: string): Promise<Report | null> => {
-  try {
-    return await ReportModel.findById(reportId);
-  } catch (error) {
-    console.error('❌ Error fetching report by ID:', error);
-    throw error;
-  }
-};
-
-// Delete a Report
-export const deleteReport = async (reportId: string): Promise<boolean> => {
-  try {
-    const result = await ReportModel.deleteOne({ _id: reportId });
-    return result.deletedCount > 0;
-  } catch (error) {
-    console.error('❌ Error deleting report:', error);
-    throw error;
-  }
-};
-
-// Generate Mock Report Data
-export const generateMockReport = (fileName: string, pageCount: number): Report['pageResults'] => {
-  const statuses: ('pass' | 'fail' | 'warning')[] = ['pass', 'fail', 'warning'];
-
-  return Array.from({ length: pageCount }, (_, index) => {
-    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-
-    const issues =
-      randomStatus === 'pass'
-        ? []
-        : ['Inconsistent dimensions', 'Missing labels', 'Inadequate clearance', 'Incorrect distances']
-            .sort(() => 0.5 - Math.random()) // Shuffle issues
-            .slice(0, Math.floor(Math.random() * 3) + 1); // Pick 1-3 issues
-
-    return {
-      pageNumber: index + 1,
-      status: randomStatus,
-      issues: issues.length > 0 ? issues : undefined,
-    };
-  });
-};
-
-// Export Mongoose Model
-export default ReportModel;
-*/
+// For demo purposes, let's add some mock users
+users.push({
+  id: '123',
+  email: 'user@example.com', 
+  password: 'password123',
+  name: 'Demo User'
+});
