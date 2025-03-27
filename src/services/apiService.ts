@@ -28,14 +28,11 @@ interface ValidationResponse {
 // Check if the Flask API is running
 const checkApiConnection = async (): Promise<boolean> => {
   try {
-    // Simple HEAD request to check if the server is up
     const response = await fetch('http://127.0.0.1:5000', {
-      method: 'HEAD',
-      // Adding mode: 'no-cors' to handle CORS issues in development
-      mode: 'no-cors'
+      method: 'GET'
     });
     
-    return true; // If we reach here, the connection was made
+    return response.ok;
   } catch (error) {
     console.error('API connection check failed:', error);
     return false;
@@ -63,8 +60,6 @@ export const uploadPDFFile = async (file: File, userId: string): Promise<Report 
     const response = await fetch('http://127.0.0.1:5000/validate', {
       method: 'POST',
       body: formData,
-      // Adding mode: 'no-cors' to handle CORS issues in development
-      mode: 'no-cors'
     });
 
     if (!response.ok) {
@@ -76,11 +71,14 @@ export const uploadPDFFile = async (file: File, userId: string): Promise<Report 
     // Calculate the total number of invalid fields to determine issue count
     const invalidFields = data.validation_result.validation_report.filter(item => !item.valid).length;
     
+    const score = data.quality_report.overall_score;
+
     // Convert API response to our Report format
-    const reportData: Omit<Report, 'id' | 'createdAt' | 'score'> = {
+    const reportData: Omit<Report, 'id' | 'createdAt'> = {
       userId: userId,
       fileName: data.fileName,
       status: data.quality_report.status,
+      score: score,
       pageResults: data.quality_report.page_results.map(page => ({
         pageNumber: page.pageNumber,
         status: page.status,
@@ -93,7 +91,7 @@ export const uploadPDFFile = async (file: File, userId: string): Promise<Report 
     
     toast({
       title: "PDF Evaluation Complete",
-      description: `Score: ${data.quality_report.overall_score}%. ${invalidFields} issues found.`,
+      description: `Score: ${score}%. ${invalidFields} issues found.`,
     });
 
     return savedReport;
@@ -113,10 +111,11 @@ export const uploadPDFFile = async (file: File, userId: string): Promise<Report 
 
 // Create a mock report for demonstration when the Flask API is not available
 const createMockReport = async (fileName: string, userId: string): Promise<Report> => {
-  const mockReportData: Omit<Report, 'id' | 'createdAt' | 'score'> = {
+  const mockReportData: Omit<Report, 'id' | 'createdAt'> = {
     userId: userId,
     fileName: fileName,
     status: 'partial',
+    score: 75,
     pageResults: [
       {
         pageNumber: 1,

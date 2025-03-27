@@ -12,7 +12,7 @@ load_dotenv()
 
 from flask_cors import CORS  # Add this import at the top
 
-# Right after creating your Flask app, add:
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
@@ -198,8 +198,9 @@ def validate():
         # Create a temporary directory
         with tempfile.TemporaryDirectory() as tmpdirname:
             pdf_path = os.path.join(tmpdirname, pdf_file.filename)
-            pdf_file.save(pdf_path)
+            pdf_file.save(pdf_path)  # Fixed variable name here from file to pdf_file
             
+            # Extract text and get page count
             pdf_text, page_count = extract_text_from_pdf(pdf_path)
             json_data = generate_json_from_text(pdf_text)
             validation_result = validate_pdf_with_gemini(pdf_text, json_data)
@@ -212,7 +213,13 @@ def validate():
             "quality_report": quality_report
         })
     except Exception as e:
+        print(f"Error processing PDF: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+# Add a simple route for checking if the API is running
+@app.route('/', methods=['GET', 'HEAD'])
+def health_check():
+    return jsonify({"status": "API is running"}), 200
 
 # Run the Flask app
 if __name__ == '__main__':
