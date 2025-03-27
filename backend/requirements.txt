@@ -1,0 +1,5 @@
+pymupdf
+flask
+flask-cors
+dotenv
+google-generativeai

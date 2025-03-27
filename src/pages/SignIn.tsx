@@ -1,16 +1,15 @@
-
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from '@/context/AuthContext';
-import { motion } from '@/components/animations/Motion';
-import { Eye, EyeOff, User, Lock } from 'lucide-react';
+import { useAuth } from "@/context/AuthContext";
+import { motion } from "@/components/animations/Motion";
+import { Eye, EyeOff, User, Lock } from "lucide-react";
 
 const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -19,7 +18,7 @@ const SignIn = () => {
     e.preventDefault();
     const success = await login(email, password);
     if (success) {
-      navigate('/design-quality-assurance');
+      navigate("/design-quality-assurance");
     }
   };
 
@@ -33,37 +32,82 @@ const SignIn = () => {
           transition={{ duration: 0.5 }}
           className="max-w-md mx-auto"
         >
-          <h1 className="text-2xl font-bold mb-4">Wattmonk: Your Ultimate Solar Partner</h1>
-          
+          <h1 className="text-2xl font-bold mb-4">
+            Wattmonk: Your Ultimate Solar Partner
+          </h1>
+
           <div className="space-y-8 mt-8">
             <div className="flex items-start gap-4">
               <div className="p-2 bg-blue-100 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-blue-600"
+                >
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold">End-to-End Solar Services</h3>
-                <p className="text-gray-600 mt-1">From Sales Proposal to PTO, we handle every aspect of the solar projects with precision.</p>
+                <h3 className="text-lg font-semibold">
+                  End-to-End Solar Services
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  From Sales Proposal to PTO, we handle every aspect of the
+                  solar projects with precision.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-4">
               <div className="p-2 bg-blue-100 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-blue-600"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold">AHJ and Utility-Compliant Services</h3>
-                <p className="text-gray-600 mt-1">All our services are meticulously designed to meet AHJ and Utility standards, ensuring seamless compliance.</p>
+                <h3 className="text-lg font-semibold">
+                  AHJ and Utility-Compliant Services
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  All our services are meticulously designed to meet AHJ and
+                  Utility standards, ensuring seamless compliance.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-4">
               <div className="p-2 bg-blue-100 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-blue-600"
+                >
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -71,50 +115,72 @@ const SignIn = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Tailored Customer Success Management</h3>
-                <p className="text-gray-600 mt-1">Receive personalized, expert support designed to meet your specific needs.</p>
+                <h3 className="text-lg font-semibold">
+                  Tailored Customer Success Management
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  Receive personalized, expert support designed to meet your
+                  specific needs.
+                </p>
               </div>
             </div>
           </div>
         </motion.div>
       </div>
-      
+
       {/* Right panel */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
           <div className="text-center mb-8">
-            <img 
-              src="/lovable-uploads/57f90501-54a2-4a12-8bcb-788643b36715.png" 
-              alt="Wattmonk Logo" 
-              className="h-12 mx-auto mb-6"
-            />
+            {/* <Link to="/" className="flex items-center gap-2">
+              <span className="font-bold text-xl tracking-tight">WATTMONK</span>
+            </Link> */}
             <h2 className="text-2xl font-bold">Welcome to wattmonk</h2>
           </div>
-          
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 px-4 text-gray-700 mb-6 hover:bg-gray-50 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
-              <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-              <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-              <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-              <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+
+          {/* <button className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 px-4 text-gray-700 mb-6 hover:bg-gray-50 transition-colors">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 48 48"
+              width="24px"
+              height="24px"
+            >
+              <path
+                fill="#FFC107"
+                d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+              />
+              <path
+                fill="#FF3D00"
+                d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+              />
+              <path
+                fill="#4CAF50"
+                d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+              />
+              <path
+                fill="#1976D2"
+                d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+              />
             </svg>
             Sign in with Google
-          </button>
-          
+          </button> */}
+
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or sign in with email</span>
+              <span className="px-2 bg-white text-gray-500">
+                or sign in with email
+              </span>
             </div>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium">
@@ -136,13 +202,16 @@ const SignIn = () => {
               </div>
               <p className="text-xs text-red-500">Email is required.</p>
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between">
                 <label htmlFor="password" className="block text-sm font-medium">
                   Password <span className="text-red-500">*</span>
                 </label>
-                <Link to="/forgot-password" className="text-sm text-amber-500 hover:text-amber-600">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-amber-500 hover:text-amber-600"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -172,22 +241,28 @@ const SignIn = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="flex items-center">
               <Checkbox id="remember" />
               <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
                 Remember me
               </label>
             </div>
-            
-            <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600">
+
+            <Button
+              type="submit"
+              className="w-full bg-amber-500 hover:bg-amber-600"
+            >
               Sign in
             </Button>
           </form>
-          
+
           <p className="text-center mt-6 text-sm text-gray-600">
             Don't have an account?{" "}
-            <Link to="/sign-up" className="text-amber-500 hover:text-amber-600 font-medium">
+            <Link
+              to="/sign-up"
+              className="text-amber-500 hover:text-amber-600 font-medium"
+            >
               Sign up
             </Link>
           </p>
