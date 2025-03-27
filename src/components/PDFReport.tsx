@@ -16,9 +16,7 @@ import {
   Download,
   FileText,
   BarChart,
-  ExternalLink
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { Report } from '@/services/mongoService';
 
 interface PDFReportProps {
@@ -78,7 +76,7 @@ const PDFReport: React.FC<PDFReportProps> = ({
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    }).format(new Date(date)); // Ensure date is a Date object
   };
 
   // Calculate total issues

@@ -12,8 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Download,
-  ChevronDown,
-  ChevronUp,
   CheckCircle,
   XCircle,
   AlertTriangle,
@@ -33,6 +31,8 @@ interface ReportDetailViewProps {
   onDownload: (reportId: string) => void;
 }
 
+type StatusType = 'success' | 'failed' | 'partial' | 'pass' | 'fail' | 'warning';
+
 const ReportDetailView: React.FC<ReportDetailViewProps> = ({
   report,
   isOpen,
@@ -43,7 +43,7 @@ const ReportDetailView: React.FC<ReportDetailViewProps> = ({
 
   if (!report) return null;
 
-  const getStatusIcon = (status: 'success' | 'failed' | 'partial' | 'pass' | 'fail' | 'warning') => {
+  const getStatusIcon = (status: StatusType) => {
     switch (status) {
       case 'success':
       case 'pass':
@@ -59,7 +59,7 @@ const ReportDetailView: React.FC<ReportDetailViewProps> = ({
     }
   };
 
-  const getStatusColor = (status: 'success' | 'failed' | 'partial' | 'pass' | 'fail' | 'warning') => {
+  const getStatusColor = (status: StatusType) => {
     switch (status) {
       case 'success':
       case 'pass':
@@ -148,9 +148,7 @@ const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                   <div className="text-2xl font-bold">{report.score}%</div>
                   <Progress 
                     value={report.score} 
-                    className="h-2 mt-2" 
-                    // Fixed error - using className instead of indicatorClassName
-                    // The indicator color is now controlled by CSS
+                    className="h-2 mt-2 progress" 
                   />
                 </CardContent>
               </Card>
@@ -201,7 +199,7 @@ const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                         <div key={idx} className="border-b pb-3 last:border-b-0 last:pb-0">
                           <div className="flex justify-between items-center mb-1">
                             <h4 className="font-medium">Page {page.pageNumber}</h4>
-                            <Badge className={getStatusColor(page.status)}>
+                            <Badge className={getStatusColor(page.status as StatusType)}>
                               {page.status}
                             </Badge>
                           </div>
@@ -248,7 +246,7 @@ const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex justify-between items-center">
                       <span>Page {page.pageNumber}</span>
-                      <Badge className={getStatusColor(page.status)}>
+                      <Badge className={getStatusColor(page.status as StatusType)}>
                         {page.status}
                       </Badge>
                     </CardTitle>
